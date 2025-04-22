@@ -1,0 +1,7 @@
+a = LOAD '/user/admin/data/book.txt' as (lines:chararray);
+
+b = FOREACH a GENERATE FLATTEN(TOKENIZE(lines)) as word;
+c = GROUP b by word;
+d = FOREACH c GENERATE group, COUNT(b);
+
+store d into '/user/admin/data/book.txt-pig_wordcount_aws';
