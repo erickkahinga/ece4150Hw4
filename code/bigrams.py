@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 """
-Counts bigrams
-
 Steps:
 1. Mapper:
    - Split each line on whitespace (punctuation retained).
