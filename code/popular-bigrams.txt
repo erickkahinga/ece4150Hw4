@@ -1,0 +1,24 @@
+-- 1. Load the tab separated Google Books 2‑gram file.
+A = LOAD '/user/admin/data/googlebooks-eng-2gram.txt'
+      USING PigStorage('\t')
+      AS (bigram:chararray,
+          year:int,
+          occ:int,
+          pages:int,
+          books:int);
+
+-- 2. Keep only the needed fields.
+B = FOREACH A GENERATE year AS yr, bigram AS bg, occ AS cnt;
+
+-- 3. Group records by year.
+C = GROUP B BY yr;
+
+-- 4. Within each year, sort by count descending and take the top record.
+D = FOREACH C {
+        sorted = ORDER B BY cnt DESC;
+        top1   = LIMIT sorted 1;        -- yields (yr, bg, cnt)
+        GENERATE FLATTEN(top1);
+};
+
+-- 5. Store results: (year, bigram, count)
+STORE D INTO '/user/admin/data/popular-bigrams-output';
