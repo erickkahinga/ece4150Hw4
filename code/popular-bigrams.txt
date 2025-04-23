@@ -1,24 +1,40 @@
--- 1. Load the tab separated Google Books 2‑gram file.
+/*
+This Pig script picks out, for each year, the single bigram that occurs most often:
+1. Load the tab separated bigram data with its schema.
+2. Keep only year, bigram, and occurrence count.
+3. Group the data by year.
+4. Inside each year group, sort by count descending and grab the top record.
+5. Write out (year, bigram, count) to HDFS.
+run:
+hadoop jar /var/lib/aws/emr/step-runner/hadoop-jars/command-runner.jar pig-script --run-pig-script --args -f file:///home/hadoop/code/popular-bigrams.txt
+*/
+
+-- Step 1: Load the TSV input
 A = LOAD '/user/admin/data/googlebooks-eng-2gram.txt'
-      USING PigStorage('\t')
-      AS (bigram:chararray,
-          year:int,
-          occ:int,
-          pages:int,
-          books:int);
+    USING PigStorage('\t')
+    AS (
+        bigram:chararray,   -- the two word phrase
+        year:int,           -- publication year
+        occ:int,            -- number of occurrences that year
+        pages:int,          -- pages it appears on
+        books:int           -- books it appears in 
+    );
 
--- 2. Keep only the needed fields.
-B = FOREACH A GENERATE year AS yr, bigram AS bg, occ AS cnt;
+-- Step 2: Projects only the columns we care about (year, bigram, count)
+B = FOREACH A GENERATE
+        year   AS yr,   -- year
+        bigram AS bg,   -- bigram
+        occ    AS cnt;  -- count
 
--- 3. Group records by year.
+-- Step 3: Group all records by year so we can find the top bigram per group
 C = GROUP B BY yr;
 
--- 4. Within each year, sort by count descending and take the top record.
+-- Step 4: Within each year group, sort by count descending and keep only the top record
 D = FOREACH C {
-        sorted = ORDER B BY cnt DESC;
-        top1   = LIMIT sorted 1;        -- yields (yr, bg, cnt)
-        GENERATE FLATTEN(top1);
-};
+        sorted = ORDER B BY cnt DESC;  -- highest count first
+        top1   = LIMIT sorted 1;       -- take the single top bigram
+        GENERATE FLATTEN(top1);        -- emit (yr, bg, cnt)
+    };
 
--- 5. Store results: (year, bigram, count)
+-- Step 5: Store the final (year, bigram, count) tuples to the output directory
 STORE D INTO '/user/admin/data/popular-bigrams-output';

@@ -1,12 +1,22 @@
--- Return the single (bigram, year, count) row that has the highest count value in the entire googlebooks table.
+/*
+This Hive query grabs the single bigram that appears most often
+across the entire dataset:
+1. Selects the bigram, its year, and its total count.
+2. Sorts the results so the highest count is first.
+3. Limits the output to just that top row.
+*/
 
--- Read all rows from googlebooks table and extract: bigram, year and count.
+-- 1. Pull the columns we care about from the Hive table
 SELECT
-    bigram,
-    year,
-    `count`
+    bigram,        -- the two word phrase
+    year,          -- the year it appears
+    `count`        -- how many times it occurred that year
 FROM hue__tmp_googlebooks
--- Ordering by Descending values means the largest count is first.
-ORDER BY `count` DESC
--- So by limiting to 1 means returing the top row aka highest count bigram.
-LIMIT 1;
+
+-- 2. Order by occurrence count descending to bring the max to the top
+ORDER BY
+    `count` DESC
+
+-- 3. Limit to just the top record (the overall most common bigram)
+LIMIT
+    1;
